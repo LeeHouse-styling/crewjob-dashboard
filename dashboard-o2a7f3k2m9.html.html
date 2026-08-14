@@ -617,8 +617,8 @@ function cardTemplate(job) {
       </div>
 
       <div class="field">
-        <label>팁 (tips)</label>
-        <textarea id="tips-${job.id}" placeholder="예: 승무원 합격자수 공유 안내 등">${escapeHtml(template?.tips || '')}</textarea>
+        <label>팁 (tip)</label>
+        <textarea id="tip-${job.id}" placeholder="예: 승무원 합격자수 공유 안내 등">${escapeHtml(template?.tip || '')}</textarea>
       </div>
 
       <div class="field">
@@ -692,7 +692,7 @@ function onTargetChange(jobId) {
   setVal(`warning-${jobId}`, row?.warning || "");
   setVal(`qualifications-${jobId}`, row?.qualifications || "");
   setVal(`steps-${jobId}`, row?.steps || "");
-  setVal(`tips-${jobId}`, row?.tips || "");
+  setVal(`tip-${jobId}`, row?.tip || "");
   setVal(`sortorder-${jobId}`, row?.sort_order ?? 999);
 
   const showInApp = row ? String(row.status ?? "") === "0" : true;
@@ -756,7 +756,9 @@ async function approveJob(id) {
     warning: val(`warning-${id}`),
     qualifications: val(`qualifications-${id}`),
     steps: val(`steps-${id}`),
-    tips: val(`tips-${id}`),
+    // ⚠️ 컬럼명은 tip 입니다. 예전에는 tips 로 되어 있어서
+    // 저장은 무시되고 불러오기도 비어 있었습니다.
+    tip: val(`tip-${id}`),
     end_date: val(`enddate-${id}`),
   };
   for (const [key, value] of Object.entries(fieldMap)) {
