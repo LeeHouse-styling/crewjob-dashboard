@@ -603,7 +603,12 @@ function cardTemplate(job) {
 
       <div class="field">
         <label>유의사항 (warning)</label>
-        <textarea id="warning-${job.id}" placeholder="예: 오픈데이 지원가능, 온라인 지원 오리엔테이션 수강 등">${escapeHtml(template?.warning || '')}</textarea>
+        <textarea id="warning-${job.id}" placeholder="예: 오픈데이, 서울 채용 아님">${escapeHtml(template?.warning || '')}</textarea>
+        <div class="hint">
+          앱 배지 문구 — 아래 단어가 포함되면 상세 화면에 배지가 뜹니다 (쉼표로 조합 가능)<br>
+          유형: <b>공채</b> · <b>오픈데이</b> · <b>invite only</b> &nbsp;/&nbsp;
+          조건: <b>서울 채용</b> · <b>서울 채용 아님</b> · <b>대행사</b>
+        </div>
       </div>
 
       <div class="field">
