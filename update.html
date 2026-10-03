@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>크루잡 업데이트</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #111827;
+    --sub: #6b7280;
+    --card: #f3f4f6;
+    --brand: #2563eb;
+    --brand-text: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115;
+      --text: #f3f4f6;
+      --sub: #9ca3af;
+      --card: #1b1f27;
+      --brand: #3b82f6;
+      --brand-text: #ffffff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+      "Noto Sans KR", "Segoe UI", Roboto, sans-serif;
+  }
+  main { width: 100%; max-width: 360px; text-align: center; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  p { margin: 0 0 24px; color: var(--sub); font-size: 14px; line-height: 1.6; }
+  a.btn {
+    display: block;
+    margin: 0 0 10px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  a.btn.primary { background: var(--brand); color: var(--brand-text); }
+</style>
+</head>
+<body>
+<main>
+  <h1>크루잡 업데이트</h1>
+  <p id="msg">사용 중인 기기에 맞는 스토어로 이동합니다.<br>이동하지 않으면 아래 버튼을 눌러 주세요.</p>
+  <a class="btn" id="ios" href="https://apps.apple.com/kr/app/id6811491987">App Store에서 업데이트</a>
+  <a class="btn" id="android" href="https://play.google.com/store/apps/details?id=app.crewjob.jobapp">Google Play에서 업데이트</a>
+</main>
+<script>
+  // 접속한 기기를 보고 알맞은 스토어로 보냅니다.
+  // 앱의 공지 팝업에서 [업데이트]를 누르면 이 주소가 열립니다.
+  // (예전 버전 앱은 스토어 주소를 하나만 쓸 수 있어서 이 중간 페이지가 필요합니다)
+  var STORE_IOS = "https://apps.apple.com/kr/app/id6811491987";
+  var STORE_ANDROID = "https://play.google.com/store/apps/details?id=app.crewjob.jobapp";
+
+  // 순수 함수라서 따로 시험할 수 있습니다.
+  function pickStore(ua, platform, touchPoints) {
+    ua = ua || "";
+    var isAndroid = /Android/i.test(ua);
+    // 아이패드는 데스크톱 사파리처럼 보이는 경우가 있어서 터치 지원으로 한 번 더 확인합니다.
+    var isIOS = /iPhone|iPad|iPod/i.test(ua) ||
+      (platform === "MacIntel" && touchPoints > 1);
+    if (isIOS) return STORE_IOS;
+    if (isAndroid) return STORE_ANDROID;
+    return null;
+  }
+
+  var target = pickStore(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
+  if (target) {
+    // 이동하기 전에 사용자가 쓰는 쪽 버튼만 남깁니다. (이동이 막혀도 눌러서 갈 수 있게)
+    var other = target === STORE_IOS ? "android" : "ios";
+    document.getElementById(other).style.display = "none";
+    document.getElementById(target === STORE_IOS ? "ios" : "android").classList.add("primary");
+    window.location.replace(target);
+  } else {
+    document.getElementById("msg").textContent = "사용 중인 기기에 맞는 스토어를 선택해 주세요.";
+  }
+</script>
+</body>
+</html>
