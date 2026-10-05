@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<!-- 후원 서비스를 바꿀 때는 아래 두 곳의 주소만 고치면 됩니다. -->
+<meta http-equiv="refresh" content="0; url=https://toon.at/donate/crewjob_official">
+<title>크루잡 후원</title>
+<style>
+  :root { --bg: #ffffff; --text: #111827; --sub: #6b7280; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1115; --text: #f3f4f6; --sub: #9ca3af; }
+  }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; padding: 24px 16px; text-align: center;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+      "Noto Sans KR", "Segoe UI", Roboto, sans-serif;
+  }
+  p { color: var(--sub); font-size: 14px; }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <p>후원 페이지로 이동 중입니다.<br>
+  자동으로 열리지 않으면 <a id="go" href="https://toon.at/donate/crewjob_official">여기</a>를 눌러주세요.</p>
+</main>
+<script>
+  location.replace(document.getElementById('go').href);
+</script>
+</body>
+</html>
