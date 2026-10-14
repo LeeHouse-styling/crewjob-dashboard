@@ -68,6 +68,11 @@
 
   <section class="card">
     <h2 id="formTitle">새 글</h2>
+    <div style="margin-bottom:6px">
+      <button class="small" onclick="$('mdFile').click()">📄 양식 파일(.md) 불러오기</button>
+      <input type="file" id="mdFile" accept=".md,.txt,text/markdown,text/plain" style="display:none" onchange="importMd(this)">
+      <div class="hint">양식 파일 맨 위의 머리말(--- 로 둘러싼 부분)과 「## 출처」 섹션을 읽어서 아래 칸을 채워 줘요. 불러온 뒤 확인하고 저장하세요. 발행 여부는 직접 체크해야 해요.</div>
+    </div>
 
     <label>제목</label>
     <input id="f_title" placeholder="대한항공 1차 영상면접, 제 개인적인 분석입니다">
@@ -279,6 +284,65 @@ async function deletePost() {
   if (!editingId || !confirm("이 글을 삭제할까요? 되돌릴 수 없어요.")) return;
   try { await sb(`/rest/v1/briefings?id=eq.${editingId}`, { method: "DELETE" }); toast("삭제했어요"); newPost(); await loadPosts(); }
   catch (e) { toast(e.message); }
+}
+
+/* ---------- 양식 파일 불러오기 ---------- */
+function importMd(input) {
+  const f = input.files[0]; input.value = "";
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { try { applyMd(String(r.result)); } catch (e) { console.error(e); toast("파일을 읽지 못했어요: " + e.message); } };
+  r.readAsText(f, "utf-8");
+}
+
+function applyMd(raw) {
+  let text = raw.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+  const fm = {};
+  const m = text.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (m) {
+    m[1].split("\n").forEach(line => {
+      const i = line.indexOf(":");
+      if (i > 0) fm[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+    });
+    text = text.slice(m[0].length);
+  }
+  text = text.replace(/<!--[\s\S]*?-->/g, "");           // 안내 주석 제거
+
+  // 「## 출처」 섹션은 본문에서 떼어 출처 칸으로
+  const lines = text.split("\n"); let sources = "";
+  const si = lines.findIndex(l => /^##\s*출처/.test(l.trim()));
+  if (si >= 0) {
+    let ei = lines.length;
+    for (let k = si + 1; k < lines.length; k++) if (/^##\s/.test(lines[k].trim())) { ei = k; break; }
+    sources = lines.slice(si + 1, ei).join("\n").trim();
+    lines.splice(si, ei - si);
+  }
+  const body = lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+
+  newPost();   // 칸 비우기 (새 글로)
+  $("f_title").value = fm.title || "";
+  $("f_summary").value = fm.summary || "";
+  $("f_body").value = body;
+  $("f_sources").value = sources;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fm.info_date || "")) $("f_info").value = fm.info_date;
+
+  const confMap = { "낮음": "low", "중간": "mid", "높음": "high", low: "low", mid: "mid", high: "high" };
+  setRadio("conf", confMap[fm.confidence] || "");
+  const visMap = { "전체공개": "public", "전체 공개": "public", "예고": "teaser", "예고(블러)": "teaser", "운영자만": "admin", public: "public", teaser: "teaser", admin: "admin" };
+  setRadio("vis", visMap[fm.visibility] || "public");
+
+  const notes = [];
+  if (fm.category) {
+    const c = cats.find(x => x.name === fm.category);
+    if (c) $("f_category").value = c.id;
+    else { $("newCat").value = fm.category; $("catAdd").classList.add("show"); notes.push(`새 카테고리예요: “${fm.category}” → [추가]를 눌러 주세요.`); }
+  }
+  if (fm.airline) {
+    const a = airs.find(x => x.name === fm.airline);
+    if (a) $("f_airline").value = a.id;
+    else { $("newAir").value = fm.airline; $("airAdd").classList.add("show"); notes.push(`새 항공사예요: “${fm.airline}” → [추가]를 눌러 주세요.`); }
+  }
+  toast(notes.length ? notes.join(" ") : "불러왔어요. 확인하고 저장하세요.");
 }
 
 init();
