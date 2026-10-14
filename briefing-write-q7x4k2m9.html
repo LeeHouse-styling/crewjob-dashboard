@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>크루 브리핑 작성</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --border:#e2e5ea; --text:#1a1d23; --dim:#6b7280; --accent:#2563eb; --danger:#dc2626; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif; background:var(--bg); color:var(--text); }
+  header { background:var(--card); border-bottom:1px solid var(--border); padding:16px 24px; display:flex; justify-content:space-between; align-items:center; }
+  header h1 { font-size:17px; margin:0; font-weight:600; }
+  main { max-width:860px; margin:0 auto; padding:20px 16px 60px; display:grid; gap:20px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:18px; }
+  h2 { font-size:15px; margin:0 0 12px; font-weight:600; }
+  label { display:block; font-size:13px; font-weight:600; margin:14px 0 5px; }
+  label i { font-style:normal; font-weight:400; color:var(--dim); margin-left:6px; }
+  input, select, textarea { width:100%; font:inherit; font-size:14px; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:#fff; }
+  textarea { min-height:90px; resize:vertical; line-height:1.55; }
+  textarea.body { min-height:360px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; }
+  .row { display:flex; gap:10px; } .row > * { flex:1; }
+  .seg { display:flex; gap:6px; } .seg label { margin:0; flex:1; font-weight:400; }
+  .seg input { display:none; }
+  .seg span { display:block; text-align:center; padding:8px; border:1px solid var(--border); border-radius:8px; font-size:13px; cursor:pointer; }
+  .seg input:checked + span { background:#dbeafe; border-color:var(--accent); color:var(--accent); font-weight:600; }
+  button { font:inherit; font-size:14px; padding:9px 16px; border-radius:8px; border:1px solid var(--border); background:#fff; cursor:pointer; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  button.danger { color:var(--danger); border-color:#fecaca; }
+  button.small { padding:6px 10px; font-size:12px; }
+  .hint { font-size:12px; color:var(--dim); margin-top:4px; line-height:1.5; }
+  .add { display:none; gap:8px; margin-top:8px; } .add.show { display:flex; }
+  .add input { flex:1; } .add button { flex:none; }
+  .list-row { display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; font-size:14px; }
+  .list-row:last-child { border:0; }
+  .list-row small { color:var(--dim); white-space:nowrap; }
+  .actions { display:flex; gap:10px; margin-top:20px; align-items:center; }
+  .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 16px; border-radius:8px; font-size:13px; display:none; z-index:50; }
+  .toast.show { display:block; }
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:40; }
+  .overlay.show { display:flex; }
+  .box { background:#fff; border-radius:12px; padding:24px; width:min(360px,92vw); }
+  .box .err { color:var(--danger); font-size:13px; margin-top:10px; display:none; } .box .err.show { display:block; }
+</style>
+</head>
+<body>
+
+<div class="overlay" id="loginOverlay">
+  <div class="box">
+    <h2>관리자 로그인</h2>
+    <label for="loginEmail">이메일</label><input type="email" id="loginEmail" autocomplete="username">
+    <label for="loginPw">비밀번호</label><input type="password" id="loginPw" autocomplete="current-password">
+    <div style="margin-top:16px"><button class="primary" style="width:100%" onclick="login()">로그인</button></div>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<header>
+  <h1>크루 브리핑 작성</h1>
+  <button class="small" id="logoutBtn" onclick="logout()">로그아웃</button>
+</header>
+
+<main>
+  <section class="card">
+    <h2>작성한 글 <button class="small" style="margin-left:8px" onclick="newPost()">＋ 새 글</button></h2>
+    <div id="postList"><div class="hint">불러오는 중…</div></div>
+  </section>
+
+  <section class="card">
+    <h2 id="formTitle">새 글</h2>
+    <div style="margin-bottom:6px">
+      <button class="small" onclick="$('mdFile').click()">📄 양식 파일(.md) 불러오기</button>
+      <input type="file" id="mdFile" accept=".md,.txt,text/markdown,text/plain" style="display:none" onchange="importMd(this)">
+      <div class="hint">양식 파일 맨 위의 머리말(--- 로 둘러싼 부분)과 「## 출처」 섹션을 읽어서 아래 칸을 채워 줘요. 불러온 뒤 확인하고 저장하세요. 발행 여부는 직접 체크해야 해요.</div>
+    </div>
+
+    <label>제목</label>
+    <input id="f_title" placeholder="대한항공 1차 영상면접, 제 개인적인 분석입니다">
+
+    <label>한 줄 결론 <i>선택 · 상세 맨 위 파란 박스에 나와요</i></label>
+    <input id="f_summary">
+
+    <div class="row">
+      <div>
+        <label>카테고리 <i>선택</i></label>
+        <select id="f_category"></select>
+        <button class="small" style="margin-top:8px" onclick="toggleAdd('catAdd')">＋ 새 카테고리</button>
+        <div class="add" id="catAdd"><input id="newCat" placeholder="예: 언어꿀팁"><button class="primary small" onclick="addCategory()">추가</button></div>
+      </div>
+      <div>
+        <label>항공사 <i>선택 · 비우면 “공통”</i></label>
+        <select id="f_airline"></select>
+        <button class="small" style="margin-top:8px" onclick="toggleAdd('airAdd')">＋ 새 항공사</button>
+        <div class="add" id="airAdd">
+          <input id="newAir" placeholder="이름">
+          <input id="newAirInit" placeholder="이니셜(선택)" style="max-width:110px" maxlength="2">
+          <button class="primary small" onclick="addAirline()">추가</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>믿음 지수 <i>선택</i></label>
+        <div class="seg">
+          <label><input type="radio" name="conf" value="" checked><span>없음</span></label>
+          <label><input type="radio" name="conf" value="low"><span>🤔 낮음</span></label>
+          <label><input type="radio" name="conf" value="mid"><span>🙂 중간</span></label>
+          <label><input type="radio" name="conf" value="high"><span>😎 높음</span></label>
+        </div>
+      </div>
+      <div>
+        <label>정보 기준일 <i>선택</i></label>
+        <input type="date" id="f_info">
+      </div>
+    </div>
+
+    <label>본문 <i>마크다운 · 제목은 ## 로 시작</i></label>
+    <textarea class="body" id="f_body"></textarea>
+    <div class="hint">표(|), 목록(-, 1.), 체크박스(- [ ]), 인용(&gt;), 링크([이름](https://…))를 지원해요. 굵게(**)는 앱에서 일반 굵기로 보여요. &lt;!-- 주석 --&gt; 은 앱에 안 나와요.</div>
+
+    <label>출처 <i>선택 · 비워도 저장돼요 · 링크는 [이름](https://…)</i></label>
+    <textarea id="f_sources"></textarea>
+
+    <label>공개 범위</label>
+    <div class="seg">
+      <label><input type="radio" name="vis" value="public" checked><span>전체 공개</span></label>
+      <label><input type="radio" name="vis" value="teaser"><span>예고(블러)</span></label>
+      <label><input type="radio" name="vis" value="admin"><span>🔒 운영자만</span></label>
+    </div>
+    <div class="hint">예고(블러)는 항공사·카테고리·날짜만 일반 사용자에게 내려가고 제목·본문은 내려가지 않아요. 운영자만은 일반 사용자 앱에 아예 안 나와요.</div>
+
+    <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:16px">
+      <input type="checkbox" id="f_pub" style="width:auto"> 발행하기 <i style="margin:0">체크하지 않으면 초안(운영자만 봄)</i>
+    </label>
+
+    <div class="actions">
+      <button class="primary" onclick="savePost()">저장</button>
+      <button class="danger" id="delBtn" style="display:none" onclick="deletePost()">삭제</button>
+      <span class="hint" id="saveHint"></span>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = "https://fwpqvveltvqvrjamcubg.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3cHF2dmVsdHZxdnJqYW1jdWJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMzU3NzMsImV4cCI6MjA5MjcxMTc3M30.Hwr60_yuDfmP3okn_GKOrCP7jsbgktMOIwgol-mFAtI";
+
+let session = null;
+try { session = JSON.parse(localStorage.getItem("sb_session") || "null"); } catch (e) { session = null; }  // 승인 대시보드와 같은 로그인 공유
+let cats = [], airs = [], posts = [], editingId = null;
+
+const $ = (id) => document.getElementById(id);
+function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2600); }
+function toggleAdd(id) { $(id).classList.toggle("show"); }
+
+function saveSession(s) { session = s; if (s) localStorage.setItem("sb_session", JSON.stringify(s)); else localStorage.removeItem("sb_session"); }
+function norm(d) { return { access_token: d.access_token, refresh_token: d.refresh_token, expires_at: d.expires_at || Math.floor(Date.now()/1000) + (d.expires_in || 3600) }; }
+
+async function ensureToken() {
+  if (!session || !session.access_token) return null;
+  if (session.expires_at - Math.floor(Date.now()/1000) > 60) return session.access_token;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, { method: "POST", headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ refresh_token: session.refresh_token }) });
+    if (!r.ok) throw new Error();
+    saveSession(norm(await r.json()));
+    return session.access_token;
+  } catch (e) { saveSession(null); showLogin("로그인 유효기간이 지났습니다."); return null; }
+}
+
+async function sb(path, opts = {}) {
+  const token = await ensureToken();
+  if (!token) throw new Error("로그인이 필요합니다.");
+  const res = await fetch(SUPABASE_URL + path, { ...opts, headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(opts.headers || {}) } });
+  if (!res.ok) {
+    const raw = await res.text(); console.error(res.status, path, raw);
+    if (/row-level security|42501/i.test(raw)) throw new Error("권한이 없습니다. 이 계정이 app_admins 에 등록돼 있는지 확인하세요.");
+    if (/23505/.test(raw)) throw new Error("이미 있는 이름입니다.");
+    throw new Error(`${res.status} — ${raw.slice(0, 200)}`);
+  }
+  return res;
+}
+
+function showLogin(msg) { $("loginOverlay").classList.add("show"); const e = $("loginErr"); e.textContent = msg || ""; e.classList.toggle("show", !!msg); }
+async function login() {
+  const email = $("loginEmail").value.trim(), password = $("loginPw").value;
+  if (!email || !password) return showLogin("이메일과 비밀번호를 입력하세요.");
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, { method: "POST", headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
+  const d = await r.json();
+  if (!r.ok) return showLogin(d.error_description || d.msg || "로그인에 실패했습니다.");
+  saveSession(norm(d)); $("loginPw").value = ""; $("loginOverlay").classList.remove("show"); init();
+}
+function logout() { saveSession(null); showLogin(); }
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" && $("loginOverlay").classList.contains("show")) login(); });
+
+/* ---------- 데이터 ---------- */
+async function init() {
+  if (!session) return showLogin();
+  try {
+    [cats, airs] = await Promise.all([
+      sb("/rest/v1/briefing_categories?select=*&order=sort.asc,name.asc").then(r => r.json()),
+      sb("/rest/v1/briefing_airlines?select=*&order=sort.asc,name.asc").then(r => r.json()),
+    ]);
+    fillSelects();
+    await loadPosts();
+  } catch (e) { toast(e.message); }
+}
+
+function fillSelects(selCat, selAir) {
+  $("f_category").innerHTML = `<option value="">(없음)</option>` + cats.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  $("f_airline").innerHTML = `<option value="">(공통)</option>` + airs.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join("");
+  if (selCat !== undefined) $("f_category").value = selCat || "";
+  if (selAir !== undefined) $("f_airline").value = selAir || "";
+}
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+async function addCategory() {
+  const name = $("newCat").value.trim(); if (!name) return;
+  try {
+    const r = await sb("/rest/v1/briefing_categories", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ name, sort: cats.length + 1 }) });
+    const row = (await r.json())[0]; cats.push(row); fillSelects(row.id, $("f_airline").value);
+    $("newCat").value = ""; toggleAdd("catAdd"); toast("카테고리를 추가했어요");
+  } catch (e) { toast(e.message); }
+}
+async function addAirline() {
+  const name = $("newAir").value.trim(); if (!name) return;
+  const initial = $("newAirInit").value.trim() || null;
+  try {
+    const r = await sb("/rest/v1/briefing_airlines", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ name, initial, sort: airs.length + 1 }) });
+    const row = (await r.json())[0]; airs.push(row); fillSelects($("f_category").value, row.id);
+    $("newAir").value = ""; $("newAirInit").value = ""; toggleAdd("airAdd"); toast("항공사를 추가했어요");
+  } catch (e) { toast(e.message); }
+}
+
+async function loadPosts() {
+  posts = await sb("/rest/v1/briefings?select=id,title,visibility,is_published,view_count,created_at,category_id,airline_id,summary,body,sources,confidence,info_date&order=created_at.desc").then(r => r.json());
+  $("postList").innerHTML = posts.length ? posts.map(p =>
+    `<div class="list-row" onclick="editPost('${p.id}')"><span>${esc(p.title)}</span><small>${p.is_published ? (p.visibility === "public" ? "공개" : p.visibility === "teaser" ? "예고" : "운영자만") : "초안"} · 조회 ${p.view_count}</small></div>`
+  ).join("") : `<div class="hint">아직 글이 없어요.</div>`;
+}
+
+function setRadio(name, v) { document.querySelectorAll(`input[name=${name}]`).forEach(r => r.checked = (r.value === v)); }
+function getRadio(name) { return document.querySelector(`input[name=${name}]:checked`).value; }
+
+function newPost() {
+  editingId = null; $("formTitle").textContent = "새 글"; $("delBtn").style.display = "none";
+  ["f_title", "f_summary", "f_body", "f_sources", "f_info"].forEach(i => $(i).value = "");
+  fillSelects("", ""); setRadio("conf", ""); setRadio("vis", "public"); $("f_pub").checked = false;
+  window.scrollTo({ top: document.querySelector("#formTitle").offsetTop - 20, behavior: "smooth" });
+}
+function editPost(id) {
+  const p = posts.find(x => x.id === id); if (!p) return;
+  editingId = id; $("formTitle").textContent = "글 수정"; $("delBtn").style.display = "inline-block";
+  $("f_title").value = p.title || ""; $("f_summary").value = p.summary || ""; $("f_body").value = p.body || "";
+  $("f_sources").value = p.sources || ""; $("f_info").value = p.info_date || "";
+  fillSelects(p.category_id, p.airline_id); setRadio("conf", p.confidence || ""); setRadio("vis", p.visibility); $("f_pub").checked = !!p.is_published;
+  window.scrollTo({ top: document.querySelector("#formTitle").offsetTop - 20, behavior: "smooth" });
+}
+
+async function savePost() {
+  const title = $("f_title").value.trim();
+  if (!title) return toast("제목을 입력하세요.");
+  const row = {
+    title,
+    summary: $("f_summary").value.trim() || null,
+    category_id: $("f_category").value || null,
+    airline_id: $("f_airline").value || null,
+    confidence: getRadio("conf") || null,
+    info_date: $("f_info").value || null,
+    body: $("f_body").value,
+    sources: $("f_sources").value.trim() || null,
+    visibility: getRadio("vis"),
+    is_published: $("f_pub").checked,
+  };
+  try {
+    if (editingId) await sb(`/rest/v1/briefings?id=eq.${editingId}`, { method: "PATCH", body: JSON.stringify(row) });
+    else { const r = await sb("/rest/v1/briefings", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(row) }); editingId = (await r.json())[0].id; $("delBtn").style.display = "inline-block"; $("formTitle").textContent = "글 수정"; }
+    toast(row.is_published ? "저장했어요 (발행됨)" : "초안으로 저장했어요");
+    await loadPosts();
+  } catch (e) { toast(e.message); }
+}
+async function deletePost() {
+  if (!editingId || !confirm("이 글을 삭제할까요? 되돌릴 수 없어요.")) return;
+  try { await sb(`/rest/v1/briefings?id=eq.${editingId}`, { method: "DELETE" }); toast("삭제했어요"); newPost(); await loadPosts(); }
+  catch (e) { toast(e.message); }
+}
+
+/* ---------- 양식 파일 불러오기 ---------- */
+function importMd(input) {
+  const f = input.files[0]; input.value = "";
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { try { applyMd(String(r.result)); } catch (e) { console.error(e); toast("파일을 읽지 못했어요: " + e.message); } };
+  r.readAsText(f, "utf-8");
+}
+
+function applyMd(raw) {
+  let text = raw.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+  const fm = {};
+  const m = text.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (m) {
+    m[1].split("\n").forEach(line => {
+      const i = line.indexOf(":");
+      if (i > 0) fm[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+    });
+    text = text.slice(m[0].length);
+  }
+  text = text.replace(/<!--[\s\S]*?-->/g, "");           // 안내 주석 제거
+
+  // 「## 출처」 섹션은 본문에서 떼어 출처 칸으로
+  const lines = text.split("\n"); let sources = "";
+  const si = lines.findIndex(l => /^##\s*출처/.test(l.trim()));
+  if (si >= 0) {
+    let ei = lines.length;
+    for (let k = si + 1; k < lines.length; k++) if (/^##\s/.test(lines[k].trim())) { ei = k; break; }
+    sources = lines.slice(si + 1, ei).join("\n").trim();
+    lines.splice(si, ei - si);
+  }
+  const body = lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+
+  newPost();   // 칸 비우기 (새 글로)
+  $("f_title").value = fm.title || "";
+  $("f_summary").value = fm.summary || "";
+  $("f_body").value = body;
+  $("f_sources").value = sources;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fm.info_date || "")) $("f_info").value = fm.info_date;
+
+  const confMap = { "낮음": "low", "중간": "mid", "높음": "high", low: "low", mid: "mid", high: "high" };
+  setRadio("conf", confMap[fm.confidence] || "");
+  const visMap = { "전체공개": "public", "전체 공개": "public", "예고": "teaser", "예고(블러)": "teaser", "운영자만": "admin", public: "public", teaser: "teaser", admin: "admin" };
+  setRadio("vis", visMap[fm.visibility] || "public");
+
+  const notes = [];
+  if (fm.category) {
+    const c = cats.find(x => x.name === fm.category);
+    if (c) $("f_category").value = c.id;
+    else { $("newCat").value = fm.category; $("catAdd").classList.add("show"); notes.push(`새 카테고리예요: “${fm.category}” → [추가]를 눌러 주세요.`); }
+  }
+  if (fm.airline) {
+    const a = airs.find(x => x.name === fm.airline);
+    if (a) $("f_airline").value = a.id;
+    else { $("newAir").value = fm.airline; $("airAdd").classList.add("show"); notes.push(`새 항공사예요: “${fm.airline}” → [추가]를 눌러 주세요.`); }
+  }
+  toast(notes.length ? notes.join(" ") : "불러왔어요. 확인하고 저장하세요.");
+}
+
+init();
+</script>
+</body>
+</html>
